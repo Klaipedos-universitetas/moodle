@@ -1,0 +1,3 @@
+[submodule "public/theme/ku_boost"]
+	path = public/theme/ku_boost
+	url = git@github-ku:Klaipedos-universitetas/ku_boost.git
