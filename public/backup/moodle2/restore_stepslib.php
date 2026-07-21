@@ -1047,6 +1047,17 @@ class restore_load_included_files extends restore_structure_step {
 
         $data = (object)$data; // handy
 
+        // Reject invalid contenthash values early to prevent path traversal.
+        if (!empty($data->contenthash) && !preg_match('/^[a-f0-9]{40}$/', $data->contenthash)) {
+            $filename = isset($data->filename) ? $data->filename : '';
+            $this->log(
+                'Skipping file with invalid contenthash during restore: ' . $filename,
+                backup::LOG_WARNING
+            );
+
+            return;
+        }
+
         // load it if needed:
         //   - it it is one of the annotated inforef files (course/section/activity/block)
         //   - it is one "user", "group", "grouping", "grade", "question" or "qtype_xxxx" component file (that aren't sent to inforef ever)
@@ -1682,9 +1693,12 @@ class restore_section_structure_step extends restore_structure_step {
                 $section->summaryformat = $data->summaryformat;
                 $restorefiles = true;
             }
-
-            // Don't update availability (I didn't see a useful way to define
-            // whether existing or new one should take precedence).
+            if (!$data->visible) {
+                $section->visible = $data->visible;
+            }
+            if (!empty($CFG->enableavailability) && empty($secrec->availability)) {
+                $section->availability = isset($data->availabilityjson) ? $data->availabilityjson : null;
+            }
 
             $DB->update_record('course_sections', $section);
             $newitemid = $secrec->id;
